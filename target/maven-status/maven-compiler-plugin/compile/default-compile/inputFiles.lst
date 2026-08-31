@@ -1,0 +1,5 @@
+/workspaces/agencia-viagens-api/src/main/java/com/agencia/viagens/ViagensApplication.java
+/workspaces/agencia-viagens-api/src/main/java/com/agencia/viagens/controller/DestinoController.java
+/workspaces/agencia-viagens-api/src/main/java/com/agencia/viagens/model/Avaliacao.java
+/workspaces/agencia-viagens-api/src/main/java/com/agencia/viagens/model/Destino.java
+/workspaces/agencia-viagens-api/src/main/java/com/agencia/viagens/service/DestinoService.java
