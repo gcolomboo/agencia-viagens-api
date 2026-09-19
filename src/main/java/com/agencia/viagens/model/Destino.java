@@ -1,36 +1,56 @@
 package com.agencia.viagens.model;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import jakarta.persistence.*;
+
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
+@Entity
+@Table(name = "destinos")
 public class Destino {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable = false)
     private String nome;
+
     private String pais;
+
     private String localizacao;
+
+    @Column(length = 2000)
     private String descricao;
+
     private Double preco;
+
     private LocalDateTime dataCriacao;
+
+    @OneToMany(
+            mappedBy = "destino",
+            cascade = CascadeType.ALL,
+            orphanRemoval = true
+    )
+    @JsonManagedReference
     private List<Avaliacao> avaliacoes = new ArrayList<>();
+
     private Double mediaAvaliacoes;
+
 
     public Destino() {
     }
 
-    public Destino(Long id, String nome, String pais, String localizacao,
-                   String descricao, Double preco) {
-        this.id = id;
-        this.nome = nome;
-        this.pais = pais;
-        this.localizacao = localizacao;
-        this.descricao = descricao;
-        this.preco = preco;
-        this.dataCriacao = LocalDateTime.now();
-        this.avaliacoes = new ArrayList<>();
-        this.mediaAvaliacoes = null;
+
+    @PrePersist
+    public void prePersist() {
+        if (dataCriacao == null) {
+            dataCriacao = LocalDateTime.now();
+        }
     }
+
 
     public Long getId() {
         return id;
@@ -40,6 +60,7 @@ public class Destino {
         this.id = id;
     }
 
+
     public String getNome() {
         return nome;
     }
@@ -47,6 +68,7 @@ public class Destino {
     public void setNome(String nome) {
         this.nome = nome;
     }
+
 
     public String getPais() {
         return pais;
@@ -56,6 +78,7 @@ public class Destino {
         this.pais = pais;
     }
 
+
     public String getLocalizacao() {
         return localizacao;
     }
@@ -63,6 +86,7 @@ public class Destino {
     public void setLocalizacao(String localizacao) {
         this.localizacao = localizacao;
     }
+
 
     public String getDescricao() {
         return descricao;
@@ -72,6 +96,7 @@ public class Destino {
         this.descricao = descricao;
     }
 
+
     public Double getPreco() {
         return preco;
     }
@@ -79,6 +104,7 @@ public class Destino {
     public void setPreco(Double preco) {
         this.preco = preco;
     }
+
 
     public LocalDateTime getDataCriacao() {
         return dataCriacao;
@@ -88,6 +114,7 @@ public class Destino {
         this.dataCriacao = dataCriacao;
     }
 
+
     public List<Avaliacao> getAvaliacoes() {
         return avaliacoes;
     }
@@ -95,6 +122,7 @@ public class Destino {
     public void setAvaliacoes(List<Avaliacao> avaliacoes) {
         this.avaliacoes = avaliacoes;
     }
+
 
     public Double getMediaAvaliacoes() {
         return mediaAvaliacoes;
