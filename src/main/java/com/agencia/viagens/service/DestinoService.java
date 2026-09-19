@@ -2,100 +2,130 @@ package com.agencia.viagens.service;
 
 import com.agencia.viagens.model.Avaliacao;
 import com.agencia.viagens.model.Destino;
+import com.agencia.viagens.repository.DestinoRepository;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Collectors;
 
 @Service
 public class DestinoService {
 
-    private final List<Destino> destinos = new ArrayList<>();
-    private final AtomicLong idGenerator = new AtomicLong(1);
-    private final AtomicLong avaliacaoIdGenerator = new AtomicLong(1);
+    private final DestinoRepository destinoRepository;
 
-    // LISTAR TODOS
+
+    public DestinoService(DestinoRepository destinoRepository) {
+        this.destinoRepository = destinoRepository;
+    }
+
+
     public List<Destino> listarTodos() {
-        return new ArrayList<>(destinos);
+        return destinoRepository.findAll();
     }
 
-    // BUSCAR POR ID
+
     public Destino buscarPorId(Long id) {
-        return destinos.stream()
-                .filter(d -> d.getId().equals(id))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("Destino não encontrado com id: " + id));
+
+        return destinoRepository.findById(id)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Destino não encontrado com id: " + id
+                        )
+                );
     }
 
-    // PESQUISAR POR NOME OU LOCALIZAÇÃO
+
     public List<Destino> buscar(String nome, String localizacao) {
-        return destinos.stream()
-                .filter(d -> nome == null || nome.isBlank()
-                        || d.getNome().toLowerCase().contains(nome.toLowerCase()))
-                .filter(d -> localizacao == null || localizacao.isBlank()
-                        || correspondeLocalizacao(d, localizacao))
-                .collect(Collectors.toList());
+
+        if (nome != null && !nome.isBlank()) {
+            return destinoRepository
+                    .findByNomeContainingIgnoreCase(nome);
+        }
+
+        if (localizacao != null && !localizacao.isBlank()) {
+
+            List<Destino> porLocalizacao =
+                    destinoRepository
+                            .findByLocalizacaoContainingIgnoreCase(localizacao);
+
+            if (!porLocalizacao.isEmpty()) {
+                return porLocalizacao;
+            }
+
+            return destinoRepository
+                    .findByPaisContainingIgnoreCase(localizacao);
+        }
+
+        return destinoRepository.findAll();
     }
 
-    private boolean correspondeLocalizacao(Destino d, String localizacao) {
-        String termo = localizacao.toLowerCase();
-        boolean pais = d.getPais() != null && d.getPais().toLowerCase().contains(termo);
-        boolean loc = d.getLocalizacao() != null && d.getLocalizacao().toLowerCase().contains(termo);
-        return pais || loc;
-    }
 
-    // CADASTRAR
     public Destino criar(Destino destino) {
-        destino.setId(idGenerator.getAndIncrement());
-        destino.setDataCriacao(LocalDateTime.now());
+
+        destino.setId(null);
+
         if (destino.getAvaliacoes() == null) {
             destino.setAvaliacoes(new ArrayList<>());
         }
+
         destino.setMediaAvaliacoes(null);
-        destinos.add(destino);
-        return destino;
+
+        return destinoRepository.save(destino);
     }
 
-    // ATUALIZAR
-    public Destino atualizar(Long id, Destino atualizado) {
+
+    public Destino atualizar(Long id, Destino dados) {
+
         Destino destino = buscarPorId(id);
 
-        destino.setNome(atualizado.getNome());
-        destino.setPais(atualizado.getPais());
-        destino.setLocalizacao(atualizado.getLocalizacao());
-        destino.setDescricao(atualizado.getDescricao());
-        destino.setPreco(atualizado.getPreco());
+        destino.setNome(dados.getNome());
+        destino.setPais(dados.getPais());
+        destino.setLocalizacao(dados.getLocalizacao());
+        destino.setDescricao(dados.getDescricao());
+        destino.setPreco(dados.getPreco());
 
-        return destino;
+        return destinoRepository.save(destino);
     }
 
-    // EXCLUIR
+
     public void excluir(Long id) {
+
         Destino destino = buscarPorId(id);
-        destinos.remove(destino);
+
+        destinoRepository.delete(destino);
     }
 
-    // REGISTRAR AVALIAÇÃO E RECALCULAR MÉDIA
-    public Destino avaliar(Long id, Avaliacao avaliacao) {
-        if (avaliacao.getNota() == null || avaliacao.getNota() < 0 || avaliacao.getNota() > 5) {
-            throw new IllegalArgumentException("A nota deve estar entre 0 e 5");
+
+    public Destino adicionarAvaliacao(
+            Long id,
+            Avaliacao avaliacao
+    ) {
+
+        if (avaliacao.getNota() == null ||
+                avaliacao.getNota() < 0 ||
+                avaliacao.getNota() > 5) {
+
+            throw new IllegalArgumentException(
+                    "A nota deve estar entre 0 e 5."
+            );
         }
 
         Destino destino = buscarPorId(id);
 
-        avaliacao.setId(avaliacaoIdGenerator.getAndIncrement());
+        avaliacao.setId(null);
+        avaliacao.setDestino(destino);
+
         destino.getAvaliacoes().add(avaliacao);
 
-        double media = destino.getAvaliacoes().stream()
+        double media = destino
+                .getAvaliacoes()
+                .stream()
                 .mapToDouble(Avaliacao::getNota)
                 .average()
                 .orElse(0.0);
 
         destino.setMediaAvaliacoes(media);
 
-        return destino;
+        return destinoRepository.save(destino);
     }
 }
